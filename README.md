@@ -1,5 +1,8 @@
 # JobScraper
 
+## Documentation
+
+- [Epics and Stories Backlog](BACKLOG.md)
 This repository currently contains the initial scaffold for the JobScraper project.
 
 ## Structure
