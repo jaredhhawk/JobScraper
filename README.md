@@ -1,5 +1,15 @@
 # JobScraper
 
+This repository currently contains the initial scaffold for the JobScraper project.
+
+## Structure
+
+- `backend/`: Domain-specific packages for ingestion, profiling, analytics, compliance, and more.
+- `frontend/`: Placeholder for the future user-facing application.
+- `infra/`: Docker and orchestration configuration placeholders.
+- `tests/`: Placeholder directory for automated tests.
+
+Each backend package exposes a module-level docstring describing its intended responsibility.
 ## Goal
 - Build an automated pipeline that discovers, extracts, and normalizes job postings from multiple sources.
 - Provide a query interface that allows product and data teams to analyze market hiring trends in near real time.
