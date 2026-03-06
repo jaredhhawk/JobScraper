@@ -1,84 +1,44 @@
 # JobScraper
 
-## Documentation
+Automated pipeline for discovering, extracting, and normalizing job postings across multiple sources — built to surface signal, not volume.
 
-- [Epics and Stories Backlog](BACKLOG.md)
-This repository currently contains the initial scaffold for the JobScraper project.
+---
 
-## Structure
+## Why I Built This
 
-- `backend/`: Domain-specific packages for ingestion, profiling, analytics, compliance, and more.
-- `frontend/`: Placeholder for the future user-facing application.
-- `infra/`: Docker and orchestration configuration placeholders.
-- `tests/`: Placeholder directory for automated tests.
+Job boards are noisy. Most surfaces are optimized for maximum posting volume, which means a search for "Principal PM" returns 200 results where maybe 15 are actually relevant. I wanted a system that could ingest from multiple sources, deduplicate aggressively, classify by actual fit (not just keyword match), and serve a clean query interface for filtering and trend analysis.
 
-Each backend package exposes a module-level docstring describing its intended responsibility.
-## Goal
-- Build an automated pipeline that discovers, extracts, and normalizes job postings from multiple sources.
-- Provide a query interface that allows product and data teams to analyze market hiring trends in near real time.
+This is also the data foundation for a larger job search intelligence system — you can't do meaningful signal detection without clean, normalized posting data underneath it.
 
-## Success Criteria
-- Daily ingestion completes in under one hour with <1% extraction failures per source.
-- Stakeholders can filter and export job data by company, role, location, and posting age.
-- Monitoring dashboards alert the team of source outages or schema drifts within 15 minutes.
+---
 
-## Tech Stack
-- **Backend:** Python 3.11, FastAPI, SQLAlchemy.
-- **Data:** PostgreSQL 15, Redis for task coordination, S3 for raw scrape storage.
-- **Infrastructure:** Docker, Kubernetes (GKE), Terraform for IaC, GitHub Actions for CI/CD.
-- **Observability:** Prometheus, Grafana, OpenTelemetry traces.
+## What It Does
 
-## Repository Layout
-- `ingestion/`: Source-specific crawlers, parsers, and normalization utilities.
-- `api/`: FastAPI service exposing search, filtering, and admin endpoints.
-- `db/`: Migrations, seeds, and data-access layer abstractions.
-- `infrastructure/`: Terraform modules, Kubernetes manifests, and deployment scripts.
-- `docs/`: Architecture diagrams, onboarding guides, and ADRs.
-- `scripts/`: Operational tooling (backfills, data quality checks, one-off fixes).
+- Ingests job postings from multiple sources on a daily schedule
+- Normalizes across sources (title, company, location, date, requirements) into a consistent schema
+- Deduplicates across sources using fuzzy matching on company + title + location
+- Classifies postings by role type, seniority, and domain
+- Exposes a query API for filtering by company, role, location, and posting age
 
-## Environment & Secrets
-- Store local environment variables in `.env.local`; never commit secrets.
-- Use GitHub Actions secrets for CI/CD credentials and Terraform cloud backends.
-- Rotate third-party API keys quarterly and document rotations in `docs/secrets-log.md`.
-- Prefer HashiCorp Vault in production for sourcing database and scraper credentials.
+---
 
-## Epics & Stories
-- **Epic: Source Onboarding**
-  - Implement reusable crawler interface and add connectors for LinkedIn, Indeed, and niche boards.
-  - Automate schema validation for new sources with contract tests.
-- **Epic: Data Quality & Insights**
-  - Build deduplication pipeline and classification models for job titles and skills.
-  - Deliver analytics endpoints and dashboards for hiring trend reports.
-- **Epic: Platform Reliability**
-  - Add observability instrumentation, alerting rules, and runbooks.
-  - Harden deployment pipeline with canary rollouts and blue/green fallbacks.
+## Design Decisions
 
-## Data Model
-- `jobs`: core posting fields (title, company, location, salary range, post_date, source).
-- `job_details`: unstructured descriptions, normalized skills, seniority tags.
-- `companies`: metadata including industry, size, headquarters, and external identifiers.
-- `pipelines`: ingestion run metadata (status, runtime, failure counts, source).
-- Use slowly changing dimensions for company metadata and retain historical job snapshots.
+**Source adapter pattern.** Each job source (board, RSS feed, direct scrape) implements a common interface. Adding a new source means writing one adapter, not touching the core pipeline. The tradeoff: more upfront abstraction, but it's paid back fast once you have more than two sources behaving differently.
 
-## Milestones
-- **M1 – Prototype (Month 1):** Single-source crawler with manual review workflow.
-- **M2 – Multi-Source Beta (Month 2):** Add three priority sources, implement dedupe, expose read-only API.
-- **M3 – Production Ready (Month 3):** Harden infrastructure, enable alerts, deliver analytics dashboards.
+**PostgreSQL over a document store.** Job postings look like unstructured data but the queries are almost always relational (filter by company, sort by date, aggregate by role type). A document store would have made the ingestion side easier and the query side harder. Chose the harder ingestion, cleaner queries.
 
-## Non-Functional Requirements
-- Achieve 99.5% API uptime with p95 latency under 400 ms.
-- Ensure pipelines recover automatically from transient failures and retry up to three times.
-- Encrypt data at rest and in transit; comply with SOC 2 logging standards.
-- Provide audit trails for edits to job records and configuration changes.
+**Deduplication before classification.** Running classification on duplicates wastes compute and inflates signal. Dedup runs first in the pipeline even though it's more complex to implement pre-classification.
 
-## Risks
-- Website anti-bot measures may block crawlers; mitigate with rotating proxies and legal review.
-- Schema drift across sources could break normalization; schedule nightly validation runs.
-- High ingestion volume may increase infrastructure costs; implement autoscaling and budget alerts.
-- Regulatory changes (e.g., GDPR, CCPA) could restrict data use; coordinate with legal quarterly.
+---
 
-## Ask Codex
-- Prefer incremental PRs with high test coverage; reference related issues in descriptions.
-- Before implementing new sources, search the repo for existing adapters to reuse patterns.
-- Use `scripts/dev_bootstrap.sh` to set up local services and seed baseline data.
-- Run `make quality` before submitting to catch linting or typing regressions.
+## Stack
+
+- **Backend:** Python 3.11, FastAPI
+- **Storage:** PostgreSQL
+
+---
+
+## Status
+
+Active development. Greenhouse and Builtin source adapters complete. Multi-source deduplication in progress.
